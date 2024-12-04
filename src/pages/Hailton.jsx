@@ -1,8 +1,9 @@
-import React, { useState, useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import React, { useState, useRef, useEffect } from "react";
+import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
-import { Html } from "@react-three/drei";
-import { Layout, Form, InputNumber, Button, Typography, Divider, Row, Col } from "antd";
+import { Html, OrbitControls } from "@react-three/drei";
+import { Layout, Form, InputNumber, Button, Typography, Divider, Row, Col, List } from "antd";
+import { FaMapMarkerAlt } from "react-icons/fa";
 import "antd/dist/reset.css";
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -15,36 +16,42 @@ const calculateDistance = (a, b) => {
   return Math.sqrt(dx * dx + dy * dy);
 };
 
-// Componente para mostrar paso a paso la ruta
-const Route = ({ cities, step }) => {
+// Componente para mostrar la línea de la ruta
+const AnimatedRoute = ({ cities, stepIndex, route }) => {
   const lineRef = useRef();
+  const points = [];
 
-  const points = step.map((index) => {
-    const { x, y } = cities[index];
-    return new THREE.Vector3(x, y, 0);
-  });
+  // Crear puntos según el índice actual
+  for (let i = 0; i <= stepIndex && i < route.length; i++) {
+    const city = cities[route[i]];
+    points.push(new THREE.Vector3(city.x, city.y, 0));
+  }
 
-  useFrame(() => {
+  useEffect(() => {
     if (lineRef.current) {
-      lineRef.current.geometry.setFromPoints(points);
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      lineRef.current.geometry.dispose(); // Liberar geometría previa
+      lineRef.current.geometry = geometry; // Asignar nueva geometría
     }
-  });
+  }, [stepIndex, points]); // Ejecutar cada vez que cambie `stepIndex`
 
   return (
     <line ref={lineRef}>
       <bufferGeometry />
-      <lineBasicMaterial color="yellow" linewidth={2} />
+      <lineBasicMaterial color="black" linewidth={2} />
     </line>
   );
 };
 
-// Componente principal
 const Hailton = () => {
   const [numCities, setNumCities] = useState(5);
   const [cities, setCities] = useState([]);
   const [route, setRoute] = useState([]);
-  const [steps, setSteps] = useState([]);
+  const [visited, setVisited] = useState([]);
+  const [stepIndex, setStepIndex] = useState(-1);
   const [executionTime, setExecutionTime] = useState(0);
+  const [executionHistory, setExecutionHistory] = useState([]);
+  const [decimalPrecision, setDecimalPrecision] = useState(4); // Agregado para control de decimales
 
   const generateCities = () => {
     const newCities = Array.from({ length: numCities }, () => ({
@@ -53,55 +60,96 @@ const Hailton = () => {
     }));
     setCities(newCities);
     setRoute([]);
-    setSteps([]);
+    setVisited([]);
+    setStepIndex(-1);
   };
 
   const calculateRoute = () => {
+    const start = Date.now(); // Usar Date.now() en lugar de performance.now()
     const distances = [];
-    const stepsTaken = [];
+    const currentRoute = [0];
+    const visitedCities = Array(cities.length).fill(false);
+    visitedCities[0] = true;
+    
     for (let i = 0; i < cities.length; i++) {
       distances[i] = [];
       for (let j = 0; j < cities.length; j++) {
         distances[i][j] = calculateDistance(cities[i], cities[j]);
       }
     }
-
-    const start = performance.now();
-    const visited = Array(cities.length).fill(false);
-    const currentRoute = [0];
+  
     let currentCity = 0;
-    visited[currentCity] = true;
-
     for (let step = 1; step < cities.length; step++) {
-      stepsTaken.push([...currentRoute]);
       let nearestCity = -1;
       let nearestDistance = Infinity;
-
+  
       for (let i = 0; i < cities.length; i++) {
-        if (!visited[i] && distances[currentCity][i] < nearestDistance) {
+        if (!visitedCities[i] && distances[currentCity][i] < nearestDistance) {
           nearestCity = i;
           nearestDistance = distances[currentCity][i];
         }
       }
-
-      visited[nearestCity] = true;
+  
+      visitedCities[nearestCity] = true;
       currentRoute.push(nearestCity);
       currentCity = nearestCity;
     }
-
     currentRoute.push(0);
-    stepsTaken.push([...currentRoute]);
-
-    const end = performance.now();
-    setExecutionTime((end - start).toFixed(2));
+  
+    const end = Date.now(); // Finaliza el cronómetro con Date.now()
+    const timeTaken = end - start; // Calcular la diferencia
+  
+    // Mostrar el tiempo de ejecución real en la consola
+    console.log(`Tiempo de ejecución real: ${timeTaken} ms`);
+  
+    // Establecer un umbral mínimo para evitar mostrar 0 cuando el valor es muy pequeño
+    const minTimeThreshold = 1; // Umbral mínimo para mostrar tiempos más pequeños
+  
+    // Mostrar tiempo con mayor precisión si es necesario
+    let finalTime = timeTaken < minTimeThreshold ? timeTaken : timeTaken.toFixed(2);
+  
+    setExecutionTime(finalTime); // Establecer el tiempo exacto con decimales
+  
+    setExecutionHistory((prevHistory) => [
+      ...prevHistory,
+      { time: finalTime, cities: numCities },
+    ]);
+  
     setRoute(currentRoute);
-    setSteps(stepsTaken);
+    setVisited(visitedCities.map(() => false));
+    setStepIndex(0);
   };
+  
+  
+  
+  
+  
+  
+  
+
+  // Avanzar en los pasos de la ruta
+  useEffect(() => {
+    if (stepIndex >= 0 && stepIndex < route.length - 1) {
+      const timer = setTimeout(() => {
+        setVisited((prev) => {
+          const newVisited = [...prev];
+          newVisited[route[stepIndex]] = true;
+          return newVisited;
+        });
+        setStepIndex((prev) => prev + 1);
+      }, 1000); // 1 segundo entre pasos
+      return () => clearTimeout(timer);
+    }
+  }, [stepIndex, route]);
 
   return (
     <Layout style={{ height: "100vh" }}>
-      <Header style={{ backgroundColor: "#001529", color: "#fff", textAlign: "center" }}>
-        <Title style={{ color: "#fff", margin: 0 }}>TSP Visualizer</Title>
+      <Header style={{ backgroundColor: "#001529", color: "#fff", padding: "10px 20px" }}>
+        <Row justify="space-between" align="middle">
+          <Col>
+            <Title style={{ color: "#fff", margin: 0 }}>TSP Visualizer</Title>
+          </Col>
+        </Row>
       </Header>
       <Layout>
         <Sider width={300} style={{ backgroundColor: "#fff", padding: "20px" }}>
@@ -133,46 +181,42 @@ const Hailton = () => {
           <Divider />
           <Text strong>Tiempo de ejecución:</Text>
           <Text>{` ${executionTime} ms`}</Text>
+          <Divider />
+          <Text strong>Historial de Ejecuciones:</Text>
+          <List
+            dataSource={executionHistory}
+            renderItem={(item, index) => (
+            <List.Item key={index}>
+              <Text>{`Ciudades: ${item.cities}, Tiempo: ${item.time} ms`}</Text>
+            </List.Item>
+            )}
+            style={{ maxHeight: '200px', overflowY: 'auto' }} // Establecer altura máxima y permitir el scroll vertical
+            />
+
         </Sider>
         <Content style={{ backgroundColor: "#f0f2f5", padding: "10px" }}>
-          <Row justify="center" style={{ height: "100%" }}>
-            <Col span={24} style={{ height: "100%" }}>
-              <Canvas
-                style={{ width: "100%", height: "100%" }}
-                camera={{ position: [0, 0, 10], fov: 50 }}
-              >
-                {/* Mostrar ciudades */}
-                {cities.map((city, index) => (
-                  <mesh key={index} position={[city.x, city.y, 0]}>
-                    <sphereGeometry args={[0.15, 16, 16]} />
-                    <meshBasicMaterial color="red" />
-                    <Html distanceFactor={10}>
-                      <div
-                        style={{
-                          color: "white",
-                          fontSize: "12px",
-                          backgroundColor: "rgba(0, 0, 0, 0.7)",
-                          padding: "2px",
-                          borderRadius: "4px",
-                        }}
-                      >
-                        {index + 1}
-                      </div>
-                    </Html>
-                  </mesh>
-                ))}
+          <Canvas
+            style={{ width: "100%", height: "100%" }}
+            camera={{ position: [0, 0, 15], fov: 50 }}
+          >
+            {/* Mostrar ciudades */}
+            {cities.map((city, index) => (
+              <Html key={index} position={[city.x, city.y, 0]}>
+                <div style={{ textAlign: "center", color: visited[index] ? "black" : "red" }}>
+                  <FaMapMarkerAlt size={24} />
+                  <div style={{ fontSize: "12px" }}>{index + 1}</div>
+                </div>
+              </Html>
+            ))}
 
-                {/* Dibujar paso a paso */}
-                {steps.map((step, index) => (
-                  <Route key={index} cities={cities} step={step} />
-                ))}
+            {/* Dibujar línea de la ruta */}
+            <AnimatedRoute cities={cities} stepIndex={stepIndex} route={route} />
 
-                {/* Luz y cámara */}
-                <ambientLight />
-                <pointLight position={[10, 10, 10]} />
-              </Canvas>
-            </Col>
-          </Row>
+            {/* Luz y cámara */}
+            <ambientLight />
+            <pointLight position={[10, 10, 10]} />
+            <OrbitControls />
+          </Canvas>
         </Content>
       </Layout>
       <Footer style={{ textAlign: "center" }}>
