@@ -191,7 +191,7 @@ const Hailton = () => {
             </List.Item>
             )}
             style={{ maxHeight: '200px', overflowY: 'auto' }} // Establecer altura máxima y permitir el scroll vertical
-            />
+          />
 
         </Sider>
         <Content style={{ backgroundColor: "#f0f2f5", padding: "10px" }}>

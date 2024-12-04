@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, Outlet } from 'react-router-dom';  // Usar Outlet para las rutas
+import { Link, Outlet } from 'react-router-dom';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -7,9 +7,10 @@ import {
   VideoCameraOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
-import { Button, Layout, Menu, theme } from 'antd';
+import { Button, Layout, Menu, theme, Typography } from 'antd';
 
 const { Header, Sider, Content } = Layout;
+const { Title } = Typography;
 
 const Navbar = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -48,8 +49,11 @@ const Navbar = () => {
         {/* Cabecera */}
         <Header
           style={{
-            padding: 0,
+            padding: '0 20px',
             background: colorBgContainer,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
           }}
         >
           <Button
@@ -62,6 +66,10 @@ const Navbar = () => {
               height: 64,
             }}
           />
+          <Title level={3} style={{ color: '#001529', margin: 0 }}>
+            Proyecto Análisis de Algoritmos
+          </Title>
+          
         </Header>
 
         {/* Contenido */}
