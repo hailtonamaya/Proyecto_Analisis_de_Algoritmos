@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/navbar'; // Importar Navbar
 import HailtonPage from './pages/Hailton'; // Importar las páginas
-import RicardoPage from './pages/Ricardo';
+import RicardoPage from './pages/Ricardo/Ricardo';
 import JosePage from './pages/Jose';
 import StevePage from './pages/Steve';
 
