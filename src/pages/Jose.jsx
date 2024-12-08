@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Button, Input, message, Checkbox, Row, Col } from "antd";
+import { Button, Input, message, Row, Col, Checkbox } from "antd";
 
-// Algoritmo Knapsack
+// Algoritmo Knapsack Tradicional
 const knapsackFor = (capacidad, peso, valor, noObj) => {
   const mochila = Array.from({ length: noObj + 1 }, () =>
     Array(capacidad + 1).fill(0)
@@ -20,107 +20,65 @@ const knapsackFor = (capacidad, peso, valor, noObj) => {
     }
   }
 
-  return mochila[noObj][capacidad]; // Devolver el valor máximo alcanzado
+  return mochila[noObj][capacidad];
+};
+
+// Algoritmo Knapsack Fraccionado
+const fractionalKnapsack = (capacidad, peso, valor, noObj) => {
+  const items = Array.from({ length: noObj }, (_, i) => ({
+    valor: valor[i],
+    peso: peso[i],
+    ratio: valor[i] / peso[i]
+  }));
+
+  items.sort((a, b) => b.ratio - a.ratio); // Ordenar por relación valor/peso
+
+  let valorTotal = 0;
+
+  for (const item of items) {
+    if (capacidad >= item.peso) {
+      capacidad -= item.peso;
+      valorTotal += item.valor;
+    } else {
+      valorTotal += item.ratio * capacidad; // Tomar la fracción
+      break;
+    }
+  }
+
+  return valorTotal;
 };
 
 // Componente Visual
 const Jose = () => {
-  const [capacidad, setCapacidad] = useState(100000);
-  const [noObj, setNoObj] = useState(4);
-  const [pesos, setPesos] = useState([1000, 3000, 4000, 5000]);
-  const [valores, setValores] = useState([1000, 4000, 5000, 7000]);
+  const [capacidad, setCapacidad] = useState(50);
+  const [noObj, setNoObj] = useState(10);
+  const [pesos, setPesos] = useState([10, 20, 30, 5, 25, 15, 10, 20, 10, 5]);
+  const [valores, setValores] = useState([60, 100, 120, 50, 75, 90, 40, 70, 30, 20]);
   const [tiempoEjecucion, setTiempoEjecucion] = useState(null);
   const [resultado, setResultado] = useState(null);
-  const [casoAleatorio, setCasoAleatorio] = useState(false);
+  const [isFractional, setIsFractional] = useState(false); // Estado para saber qué algoritmo usar
 
   // Función para ejecutar el algoritmo y medir el tiempo
   const ejecutarKnapsack = () => {
-    const start = performance.now(); // Tiempo de inicio
+    const start = performance.now();
+    let maxValor;
 
-    const maxValor = knapsackFor(capacidad, pesos, valores, noObj);
-    const end = performance.now(); // Tiempo de fin
+    // Ejecuta el algoritmo seleccionado
+    if (isFractional) {
+      console.log("Ejecutando Knapsack Fraccionado");
+      maxValor = fractionalKnapsack(capacidad, pesos, valores, noObj);
+    } else {
+      console.log("Ejecutando Knapsack Tradicional");
+      maxValor = knapsackFor(capacidad, pesos, valores, noObj);
+    }
 
-    const tiempo = (end - start).toFixed(4); // Tiempo de ejecución en milisegundos
+    const end = performance.now();
+    const tiempo = (end - start).toFixed(6); // Medir tiempo con 6 decimales
     setTiempoEjecucion(tiempo);
     setResultado(maxValor);
 
+    console.log(`Tiempo de ejecución: ${tiempo} ms`); // Imprimir en consola el tiempo de ejecución
     message.success(`Tiempo de ejecución: ${tiempo} ms`);
-  };
-
-  // Función para generar datos aleatorios para la capacidad y cantidad de objetos
-  const generarConfiguracionAleatoria = (nivel) => {
-    let capacidadAleatoria = 0;
-    let cantidadObjetosAleatoria = 0;
-
-    switch (nivel) {
-      case "bajo":
-        capacidadAleatoria = Math.floor(Math.random() * 5000) + 1; // Capacidad aleatoria entre 1 y 5000
-        cantidadObjetosAleatoria = Math.floor(Math.random() * 5) + 1; // Objetos entre 1 y 5
-        break;
-      case "medio":
-        capacidadAleatoria = Math.floor(Math.random() * 50000) + 5000; // Capacidad entre 5000 y 50000
-        cantidadObjetosAleatoria = Math.floor(Math.random() * 10) + 5; // Objetos entre 5 y 10
-        break;
-      case "alto":
-        capacidadAleatoria = Math.floor(Math.random() * 100000) + 50000; // Capacidad entre 50000 y 100000
-        cantidadObjetosAleatoria = Math.floor(Math.random() * 15) + 10; // Objetos entre 10 y 15
-        break;
-      default:
-        break;
-    }
-
-    // Actualizar el estado con los datos aleatorios
-    setCapacidad(capacidadAleatoria);
-    setNoObj(cantidadObjetosAleatoria);
-  };
-
-  // Función para generar datos aleatorios para los pesos y valores
-  const generarPesosYValoresAleatorios = () => {
-    const pesosAleatorios = Array.from({ length: noObj }, () =>
-      Math.floor(Math.random() * 100000) + 1 // Pesos aleatorios entre 1 y 100,000
-    );
-    const valoresAleatorios = Array.from({ length: noObj }, () =>
-      Math.floor(Math.random() * 100000) + 1 // Valores aleatorios entre 1 y 100,000
-    );
-
-    // Actualizar el estado con los datos aleatorios
-    setPesos(pesosAleatorios);
-    setValores(valoresAleatorios);
-  };
-
-  // Función para manejar el cambio de pesos y valores como texto separado por comas
-  const handlePesosChange = (value) => {
-    const nuevosPesos = value.split(",").map((peso) => parseInt(peso.trim(), 10));
-    setPesos(nuevosPesos);
-  };
-
-  const handleValoresChange = (value) => {
-    const nuevosValores = value.split(",").map((valor) => parseInt(valor.trim(), 10));
-    setValores(nuevosValores);
-  };
-
-  // Generar campos para pesos y valores
-  const renderObjetoInputs = () => {
-    return (
-      <div>
-        <div style={{ marginBottom: "20px" }}>
-          <h3>Pesos de los objetos (separados por coma):</h3>
-          <Input
-            placeholder="Ej: 1000, 2000, 3000"
-            value={pesos.join(", ")}
-            onChange={(e) => handlePesosChange(e.target.value)}
-          />
-        </div>
-        <div>
-          <h3>Valores de los objetos (separados por coma):</h3>
-          <Input
-            placeholder="Ej: 1000, 4000, 5000"
-            value={valores.join(", ")}
-            onChange={(e) => handleValoresChange(e.target.value)}
-          />
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -130,95 +88,89 @@ const Jose = () => {
       {/* Configuración de la Mochila */}
       <div style={{ marginBottom: "20px" }}>
         <h3>Configuración de la Mochila:</h3>
-        <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-          <Button type="primary" onClick={() => generarConfiguracionAleatoria("bajo")}>
-            Aleatorizar bajo
-          </Button>
-          <Button type="primary" onClick={() => generarConfiguracionAleatoria("medio")}>
-            Aleatorizar medio
-          </Button>
-          <Button type="primary" onClick={() => generarConfiguracionAleatoria("alto")}>
-            Aleatorizar alto
-          </Button>
-        </div>
-        <div style={{ marginTop: "10px" }}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <label>Capacidad de la mochila:</label>
-              <Input
-                value={capacidad}
-                onChange={(e) => setCapacidad(parseInt(e.target.value))}
-                placeholder="Capacidad de la mochila"
-                type="number"
-              />
-            </Col>
-            <Col span={12}>
-              <label>Cantidad de objetos:</label>
-              <Input
-                value={noObj}
-                onChange={(e) => {
-                  setNoObj(parseInt(e.target.value));
-                  const newPesos = new Array(parseInt(e.target.value)).fill(1);
-                  const newValores = new Array(parseInt(e.target.value)).fill(1);
-                  setPesos(newPesos);
-                  setValores(newValores);
-                }}
-                placeholder="Cantidad de objetos"
-                type="number"
-              />
-            </Col>
-          </Row>
-        </div>
+        <Row gutter={16}>
+          <Col span={12}>
+            <label>Capacidad de la mochila:</label>
+            <Input
+              value={capacidad}
+              onChange={(e) => setCapacidad(parseInt(e.target.value))}
+              placeholder="Capacidad de la mochila"
+              type="number"
+            />
+          </Col>
+          <Col span={12}>
+            <label>Cantidad de objetos:</label>
+            <Input
+              value={noObj}
+              onChange={(e) =>
+                setNoObj(Math.max(1, parseInt(e.target.value || "1")))
+              }
+              placeholder="Cantidad de objetos"
+              type="number"
+              min={1}
+            />
+          </Col>
+        </Row>
       </div>
 
-      {/* Botón para aleatorizar pesos y valores */}
-      <div style={{ marginTop: "20px" }}>
-        <Button type="primary" onClick={generarPesosYValoresAleatorios}>
-          Aleatorizar Pesos y Valores
-        </Button>
+      {/* Entradas para pesos y valores */}
+      <div style={{ marginBottom: "20px" }}>
+        <h3>Pesos de los objetos (separados por coma):</h3>
+        <Input
+          placeholder="Ej: 10, 20, 30"
+          value={pesos.join(", ")}
+          onChange={(e) =>
+            setPesos(
+              e.target.value
+                .split(",")
+                .map((peso) => Math.max(1, parseInt(peso.trim())))
+            )
+          }
+        />
+        <h3>Valores de los objetos (separados por coma):</h3>
+        <Input
+          placeholder="Ej: 60, 100, 120"
+          value={valores.join(", ")}
+          onChange={(e) =>
+            setValores(
+              e.target.value
+                .split(",")
+                .map((valor) => Math.max(1, parseInt(valor.trim())))
+            )
+          }
+        />
       </div>
 
-      {/* Entradas dinámicas para pesos y valores */}
-      {renderObjetoInputs()}
+      {/* Checkbox para elegir el algoritmo */}
+      <div style={{ marginBottom: "20px" }}>
+        <Checkbox
+          checked={isFractional}
+          onChange={(e) => setIsFractional(e.target.checked)}
+        >
+          Usar Knapsack Fraccionado
+        </Checkbox>
+      </div>
 
-      {/* Resultado y Tiempo de ejecución */}
+      {/* Botón para ejecutar el algoritmo */}
+      <Button
+        type="primary"
+        onClick={ejecutarKnapsack}
+        style={{ marginTop: "20px" }}
+      >
+        Ejecutar Knapsack
+      </Button>
+
+      {/* Resultados */}
       {resultado !== null && (
         <div style={{ marginTop: "20px" }}>
           <h3>Valor máximo alcanzado: {resultado}</h3>
         </div>
       )}
-
       {tiempoEjecucion && (
         <div style={{ marginTop: "10px" }}>
           <strong>Tiempo de ejecución: {tiempoEjecucion} ms</strong>
         </div>
       )}
-
-      {/* Botón para ejecutar el algoritmo */}
-      <Button type="primary" onClick={ejecutarKnapsack} style={{ marginTop: "20px" }}>
-        Ejecutar Knapsack
-      </Button>
-
-      {/* Caso Aleatorio */}
-      <div style={{ marginTop: "20px" }}>
-        <Checkbox
-          checked={casoAleatorio}
-          onChange={(e) => {
-            setCasoAleatorio(e.target.checked);
-            if (e.target.checked) {
-              generarConfiguracionAleatoria("alto"); // Configuración por defecto alta al activar el checkbox
-              generarPesosYValoresAleatorios();
-            } else {
-              setCapacidad(100000);
-              setNoObj(4);
-              setPesos([1000, 3000, 4000, 5000]);
-              setValores([1000, 4000, 5000, 7000]);
-            }
-          }}
-        >
-          Caso Aleatorio
-        </Checkbox>
-      </div>
     </div>
   );
 };
