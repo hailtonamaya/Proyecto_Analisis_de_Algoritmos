@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { Html, OrbitControls } from "@react-three/drei";
 import { Layout, Form, InputNumber, Button, Typography, Divider, Row, Col, List } from "antd";
 import { FaMapMarkerAlt } from "react-icons/fa";
+import { FaBuilding } from "react-icons/fa"; // Importar ícono de edificio
 import "antd/dist/reset.css";
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -38,7 +39,8 @@ const AnimatedRoute = ({ cities, stepIndex, route }) => {
   return (
     <line ref={lineRef}>
       <bufferGeometry />
-      <lineBasicMaterial color="black" linewidth={2} />
+      {/* Establecer línea punteada */}
+      <lineDashedMaterial color="black" dashSize={0.5} gapSize={0.2} linewidth={2} />
     </line>
   );
 };
@@ -51,7 +53,7 @@ const Hailton = () => {
   const [stepIndex, setStepIndex] = useState(-1);
   const [executionTime, setExecutionTime] = useState(0);
   const [executionHistory, setExecutionHistory] = useState([]);
-  const [decimalPrecision, setDecimalPrecision] = useState(4); // Agregado para control de decimales
+  const [decimalPrecision, setDecimalPrecision] = useState(4);
 
   const generateCities = () => {
     const newCities = Array.from({ length: numCities }, () => ({
@@ -65,69 +67,57 @@ const Hailton = () => {
   };
 
   const calculateRoute = () => {
-    const start = Date.now(); // Usar Date.now() en lugar de performance.now()
+    const start = Date.now();
     const distances = [];
     const currentRoute = [0];
     const visitedCities = Array(cities.length).fill(false);
     visitedCities[0] = true;
-    
+
     for (let i = 0; i < cities.length; i++) {
       distances[i] = [];
       for (let j = 0; j < cities.length; j++) {
         distances[i][j] = calculateDistance(cities[i], cities[j]);
       }
     }
-  
+
     let currentCity = 0;
     for (let step = 1; step < cities.length; step++) {
       let nearestCity = -1;
       let nearestDistance = Infinity;
-  
+
       for (let i = 0; i < cities.length; i++) {
         if (!visitedCities[i] && distances[currentCity][i] < nearestDistance) {
           nearestCity = i;
           nearestDistance = distances[currentCity][i];
         }
       }
-  
+
       visitedCities[nearestCity] = true;
       currentRoute.push(nearestCity);
       currentCity = nearestCity;
     }
     currentRoute.push(0);
-  
-    const end = Date.now(); // Finaliza el cronómetro con Date.now()
-    const timeTaken = end - start; // Calcular la diferencia
-  
-    // Mostrar el tiempo de ejecución real en la consola
+
+    const end = Date.now();
+    const timeTaken = end - start;
+
     console.log(`Tiempo de ejecución real: ${timeTaken} ms`);
-  
-    // Establecer un umbral mínimo para evitar mostrar 0 cuando el valor es muy pequeño
-    const minTimeThreshold = 1; // Umbral mínimo para mostrar tiempos más pequeños
-  
-    // Mostrar tiempo con mayor precisión si es necesario
+
+    const minTimeThreshold = 1;
+
     let finalTime = timeTaken < minTimeThreshold ? timeTaken : timeTaken.toFixed(2);
-  
-    setExecutionTime(finalTime); // Establecer el tiempo exacto con decimales
-  
+
+    setExecutionTime(finalTime);
     setExecutionHistory((prevHistory) => [
       ...prevHistory,
       { time: finalTime, cities: numCities },
     ]);
-  
+
     setRoute(currentRoute);
     setVisited(visitedCities.map(() => false));
     setStepIndex(0);
   };
-  
-  
-  
-  
-  
-  
-  
 
-  // Avanzar en los pasos de la ruta
   useEffect(() => {
     if (stepIndex >= 0 && stepIndex < route.length - 1) {
       const timer = setTimeout(() => {
@@ -186,24 +176,23 @@ const Hailton = () => {
           <List
             dataSource={executionHistory}
             renderItem={(item, index) => (
-            <List.Item key={index}>
-              <Text>{`Ciudades: ${item.cities}, Tiempo: ${item.time} ms`}</Text>
-            </List.Item>
+              <List.Item key={index}>
+                <Text>{`Ciudades: ${item.cities}, Tiempo: ${item.time} ms`}</Text>
+              </List.Item>
             )}
-            style={{ maxHeight: '200px', overflowY: 'auto' }} // Establecer altura máxima y permitir el scroll vertical
+            style={{ maxHeight: "200px", overflowY: "auto" }} // Establecer altura máxima y permitir el scroll vertical
           />
-
         </Sider>
-        <Content style={{ backgroundColor: "#f0f2f5", padding: "10px" }}>
+        <Content style={{ backgroundColor: "#faf8ec", padding: "10px" }}>
           <Canvas
             style={{ width: "100%", height: "100%" }}
             camera={{ position: [0, 0, 15], fov: 50 }}
           >
-            {/* Mostrar ciudades */}
+            {/* Mostrar ciudades con icono de edificio */}
             {cities.map((city, index) => (
               <Html key={index} position={[city.x, city.y, 0]}>
                 <div style={{ textAlign: "center", color: visited[index] ? "black" : "red" }}>
-                  <FaMapMarkerAlt size={24} />
+                  <FaBuilding size={24} color={visited[index] ? "black" : "red"} />
                   <div style={{ fontSize: "12px" }}>{index + 1}</div>
                 </div>
               </Html>
