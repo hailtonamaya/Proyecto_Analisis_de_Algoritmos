@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button, Input, message, Row, Col, Checkbox } from "antd";
 
-// Algoritmo Knapsack Tradicional
+// Algoritmo Knapsack hecho por Jose Girard
 const knapsackFor = (capacidad, peso, valor, noObj) => {
   const mochila = Array.from({ length: noObj + 1 }, () =>
     Array(capacidad + 1).fill(0)
