@@ -16,7 +16,8 @@ const VisualizadorCoberturaConjuntos = () => {
   const [paso, setPaso] = useState(0);
   const [tiempoEjecucion, setTiempoEjecucion] = useState(0);
 
-  const algoritmoCoberturaConjuntos = (universo, conjuntos) => {
+  // Algoritmo aproximado
+  const algoritmoCoberturaConjuntosAproximado = (universo, conjuntos) => {
     const conjuntosSeleccionados = [];
     const pasos = [];
     let elementosNoCubiertos = new Set(universo);
@@ -51,6 +52,33 @@ const VisualizadorCoberturaConjuntos = () => {
     return { conjuntosSeleccionados, pasos };
   };
 
+  // Algoritmo de fuerza bruta
+  const algoritmoCoberturaConjuntosFuerzaBruta = (universo, conjuntos) => {
+    const todasCombinaciones = (arr) => {
+      return arr.reduce(
+        (subsets, value) => [...subsets, ...subsets.map((set) => [...set, value])],
+        [[]]
+      );
+    };
+
+    const combinaciones = todasCombinaciones(conjuntos);
+    let mejorSolucion = null;
+
+    for (const combinacion of combinaciones) {
+      const union = new Set(combinacion.flat());
+      if (universo.every((elemento) => union.has(elemento))) {
+        if (!mejorSolucion || combinacion.length < mejorSolucion.length) {
+          mejorSolucion = combinacion;
+        }
+      }
+    }
+
+    return {
+      conjuntosSeleccionados: mejorSolucion || [],
+      pasos: [],
+    };
+  };
+
   const manejarEjecucion = () => {
     const universoParseado = universo;
     const conjuntosParseados = conjuntos;
@@ -58,8 +86,9 @@ const VisualizadorCoberturaConjuntos = () => {
     // Registrar tiempo de inicio
     const tiempoInicio = performance.now();
 
-    // Ejecutar el algoritmo
-    const { conjuntosSeleccionados, pasos } = algoritmoCoberturaConjuntos(universoParseado, conjuntosParseados);
+    // Ejecutar el algoritmo (elige el que desees usar)
+    const { conjuntosSeleccionados, pasos } = algoritmoCoberturaConjuntosAproximado(universoParseado, conjuntosParseados);
+    //const { conjuntosSeleccionados, pasos } = algoritmoCoberturaConjuntosFuerzaBruta(universoParseado, conjuntosParseados);
 
     // Registrar tiempo de fin y calcular diferencia
     const tiempoFin = performance.now();
